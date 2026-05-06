@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MOMO — Co-write a Story</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sage:#3d5a4a;--sage-mid:#5a7a64;--sage-light:#c8d9cc;--sage-pale:#edf3ee;
+  --plum:#4a3060;--plum-mid:#7a5a9a;--plum-light:#d4c4e8;--plum-pale:#f2edf8;
+  --camel:#a07840;--camel-mid:#c49a60;--camel-light:#e8d8b8;--camel-pale:#faf4e8;
+  --parchment:#f7f3ec;--parchment2:#efe9de;
+  --ink:#1e1a14;--ink-soft:#4a4438;--ink-muted:#8a8070;
+  --border:rgba(60,48,30,0.1);--border-md:rgba(60,48,30,0.18);
+  --r:6px;--r-lg:14px;
+}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--parchment);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")}
+
+/* NAV */
+nav{height:58px;background:var(--sage);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(0,0,0,0.12);flex-shrink:0}
+.logo{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:600;color:var(--camel-light);letter-spacing:0.14em;display:flex;align-items:center;gap:10px}
+.logo-sub{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;font-weight:300;color:rgba(232,216,184,0.55)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-settings{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid rgba(232,216,184,0.35);background:rgba(255,255,255,0.08);color:var(--camel-light);cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .2s;letter-spacing:0.04em}
+.btn-settings:hover{background:rgba(255,255,255,0.18)}
+.btn-lang{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid rgba(232,216,184,0.35);background:rgba(255,255,255,0.08);color:var(--camel-light);cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .2s}
+.btn-lang:hover{background:rgba(255,255,255,0.18)}
+
+/* SETTINGS PANEL */
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,0.5);z-index:200;align-items:center;justify-content:center}
+.settings-overlay.open{display:flex}
+.settings-box{background:var(--parchment);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:2rem;width:90%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,0.18)}
+.settings-title{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:400;color:var(--sage);margin-bottom:6px}
+.settings-sub{font-size:12px;color:var(--ink-muted);line-height:1.6;margin-bottom:1.25rem}
+.settings-box label{font-size:12px;font-weight:500;color:var(--ink-soft);display:block;margin-bottom:5px;letter-spacing:0.03em}
+.settings-box input{width:100%;padding:9px 12px;font-size:13px;font-family:'Noto Sans SC',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:#fffdf8;color:var(--ink);outline:none;transition:border-color .2s}
+.settings-box input:focus{border-color:var(--sage-mid)}
+.settings-link{font-size:11.5px;color:var(--sage-mid);margin-top:5px;display:block}
+.settings-btns{display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end}
+.key-status{font-size:11.5px;margin-top:8px;padding:6px 10px;border-radius:var(--r);display:none}
+.key-status.ok{display:block;background:var(--sage-pale);color:var(--sage);border:1px solid var(--sage-light)}
+.key-status.err{display:block;background:#fdf0ec;color:#8a3a2a;border:1px solid #d4a090}
+
+/* MAIN */
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 58px);overflow:hidden}
+
+/* STORY PANEL */
+.story-panel{padding:1.75rem 2rem;background:var(--plum-pale);border-right:3px solid var(--plum-light);display:flex;flex-direction:column;gap:0.9rem;overflow:hidden}
+.panel-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:400;color:var(--plum);letter-spacing:0.04em}
+.panel-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:var(--ink-muted);margin-top:2px}
+.orn{display:flex;align-items:center;gap:8px;color:var(--camel-light);font-size:9px;letter-spacing:0.22em;flex-shrink:0}
+.orn::before,.orn::after{content:'';flex:1;height:1px;background:var(--camel-light);opacity:0.55}
+.story-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding-right:4px}
+.story-scroll::-webkit-scrollbar{width:3px}
+.story-scroll::-webkit-scrollbar-thumb{background:var(--plum-light);border-radius:2px}
+.seg{padding:13px 15px;border-radius:var(--r-lg);font-family:'Noto Serif SC',serif;font-size:13.5px;line-height:1.95;white-space:pre-wrap;border:1px solid transparent}
+.seg.you{background:rgba(255,253,248,0.95);border-color:var(--camel-light);border-left:3px solid var(--camel-mid)}
+.seg.ai{background:rgba(242,237,248,0.75);border-color:var(--plum-light);border-left:3px solid var(--plum-mid)}
+.seg-label{font-family:'Noto Sans SC',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.seg-label::after{content:'';flex:1;height:1px;opacity:0.28}
+.seg.you .seg-label{color:var(--camel)}
+.seg.you .seg-label::after{background:var(--camel)}
+.seg.ai .seg-label{color:var(--plum-mid)}
+.seg.ai .seg-label::after{background:var(--plum-mid)}
+.seg.loading{opacity:0.55;font-style:italic}
+.seg-actions{display:flex;justify-content:flex-end;margin-top:8px;gap:5px;opacity:0;transition:opacity .2s}
+.seg:hover .seg-actions{opacity:1}
+.seg-edit-btn{font-size:9.5px;padding:3px 9px;border-radius:10px;border:1px solid var(--plum-light);background:transparent;color:var(--plum-mid);cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:all .15s}
+.seg-edit-btn:hover{background:var(--plum-pale)}
+.seg-edit-area{width:100%;font-family:'Noto Serif SC',serif;font-size:13.5px;line-height:1.95;padding:8px 10px;border:1px solid var(--plum-mid);border-radius:var(--r);background:#fffdf8;color:var(--ink);resize:vertical;outline:none;margin-top:6px;min-height:80px}
+.seg-edit-area:focus{box-shadow:0 0 0 2px rgba(74,48,96,0.15)}
+.seg-save-btn{font-size:9.5px;padding:3px 9px;border-radius:10px;border:1px solid var(--sage);background:var(--sage);color:var(--sage-pale);cursor:pointer;font-family:'Noto Sans SC',sans-serif}
+.seg-cancel-btn{font-size:9.5px;padding:3px 9px;border-radius:10px;border:1px solid var(--border-md);background:transparent;color:var(--ink-muted);cursor:pointer;font-family:'Noto Sans SC',sans-serif}
+.empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14.5px;color:var(--ink-muted);text-align:center;padding:3rem 1rem;line-height:2.2}
+.prompt-bar{flex-shrink:0;padding:9px 13px;background:rgba(74,48,96,0.06);border:1px solid var(--plum-light);border-radius:var(--r-lg);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13.5px;color:var(--plum-mid);line-height:1.6;display:none}
+.prompt-bar.visible{display:block}
+.story-footer{display:flex;justify-content:flex-end;flex-shrink:0}
+
+/* INPUT PANEL */
+.input-panel{padding:1.75rem 2rem;background:var(--parchment);display:flex;flex-direction:column;gap:1rem;overflow-y:auto}
+.input-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:400;color:var(--sage);letter-spacing:0.04em}
+.input-sub{font-size:12px;color:var(--ink-muted);line-height:1.6}
+textarea{width:100%;font-family:'Noto Serif SC',serif;font-size:13.5px;line-height:1.85;padding:12px 14px;border:1px solid var(--border-md);border-radius:var(--r);background:#fffdf8;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s,box-shadow .2s;min-height:160px;flex:1}
+textarea:focus{border-color:var(--sage-mid);box-shadow:0 0 0 3px rgba(90,122,100,0.1)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font-family:'Noto Sans SC',sans-serif;font-size:11.5px;padding:7px 15px;border-radius:20px;border:1px solid var(--border-md);background:#fffdf8;color:var(--ink-soft);cursor:pointer;letter-spacing:0.04em;transition:all .18s}
+button:hover{background:var(--parchment2)}
+button:active{transform:scale(0.97)}
+button:disabled{opacity:0.4;cursor:not-allowed}
+.btn-sage{background:var(--sage);color:var(--sage-pale);border-color:var(--sage);font-weight:500}
+.btn-sage:hover{background:var(--sage-mid)}
+.btn-camel{color:var(--camel);border-color:var(--camel-mid)}
+.btn-camel:hover{background:var(--camel-pale)}
+.status-line{font-size:11px;color:var(--ink-muted);font-style:italic;min-height:18px}
+.no-key-warning{background:#fdf0ec;border:1px solid #d4a090;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#8a3a2a;line-height:1.6;display:none}
+.no-key-warning.visible{display:block}
+
+.genre-section{margin-bottom:0.25rem}
+.genre-label{font-size:11.5px;font-weight:500;color:var(--ink-soft);margin-bottom:8px;letter-spacing:0.03em}
+.genre-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.genre-card{padding:9px 8px;border-radius:var(--r-lg);border:1px solid var(--border-md);background:#fffdf8;cursor:pointer;text-align:center;transition:all .18s;user-select:none}
+.genre-card:hover{border-color:var(--sage-light);background:var(--sage-pale)}
+.genre-card.selected{border-color:var(--sage);background:var(--sage-pale);box-shadow:0 0 0 2px rgba(61,90,74,0.15)}
+.genre-card .genre-icon{font-size:18px;margin-bottom:3px;pointer-events:none}
+.genre-card .genre-name{font-family:'Noto Sans SC',sans-serif;font-size:10.5px;font-weight:500;color:var(--ink-soft);letter-spacing:0.03em;pointer-events:none}
+.genre-card.selected .genre-name{color:var(--sage)}
+/* ILLUSTRATION OVERLAY */
+.illus-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.illus-overlay.open{display:flex}
+.illus-box{background:var(--parchment);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:2rem;width:90%;max-width:680px;box-shadow:0 8px 40px rgba(0,0,0,0.2);margin:auto}
+.illus-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:10px}
+.illus-title{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:400;color:var(--plum);letter-spacing:0.04em}
+.illus-sub{font-size:12px;color:var(--ink-muted);margin-top:3px;line-height:1.5}
+.illus-close{font-size:18px;color:var(--ink-muted);background:none;border:none;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
+.illus-loading{text-align:center;padding:2.5rem 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--ink-muted)}
+.illus-cards{display:flex;flex-direction:column;gap:1.25rem}
+.illus-card{border:1px solid var(--camel-light);border-radius:var(--r-lg);overflow:hidden}
+.illus-card-header{background:var(--camel-pale);padding:10px 15px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--camel-light)}
+.illus-card-num{width:24px;height:24px;border-radius:50%;background:var(--camel-mid);color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Noto Sans SC',sans-serif}
+.illus-card-scene{font-family:'Noto Serif SC',serif;font-size:13.5px;font-weight:400;color:var(--camel);letter-spacing:0.03em}
+.illus-card-body{padding:14px 15px;display:flex;flex-direction:column;gap:10px}
+.illus-quote{font-family:'Noto Serif SC',serif;font-style:italic;font-size:13px;color:var(--ink-soft);line-height:1.8;padding:8px 12px;border-left:3px solid var(--plum-light);background:var(--plum-pale);border-radius:0 var(--r) var(--r) 0}
+.illus-section-label{font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:3px;font-family:'Noto Sans SC',sans-serif}
+.illus-directions{display:flex;flex-direction:column;gap:6px}
+.illus-dir{display:flex;gap:8px;font-size:12.5px;color:var(--ink-soft);line-height:1.65}
+.illus-dir-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.illus-mood{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.illus-tag{font-size:10.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--plum-light);background:var(--plum-pale);color:var(--plum-mid);font-family:'Noto Sans SC',sans-serif}
+.illus-footer{display:flex;justify-content:flex-end;margin-top:1.25rem}
+@media(max-width:700px){
+  main{grid-template-columns:1fr;height:auto;overflow:visible}
+  .story-panel{min-height:320px}
+  .story-panel,.input-panel{padding:1.25rem 1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-title">API Key Settings</div>
+    <div class="settings-sub">Enter your free Groq API key. It's saved only in your browser — never sent anywhere except Groq's servers to generate the story.</div>
+    <label>Groq API Key</label>
+    <input type="password" id="key-input" placeholder="gsk_..."/>
+    <a class="settings-link" href="https://console.groq.com" target="_blank">→ Get a free key at console.groq.com</a>
+    <div class="key-status" id="key-status"></div>
+    <div class="settings-btns">
+      <button onclick="closeSettings()">Cancel</button>
+      <button class="btn-sage" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">MOMO <span class="logo-sub">Co-write a Story</span></div>
+  <div class="nav-right">
+    <button class="btn-lang" id="lang-btn" onclick="toggleLang()">中文</button>
+    <button class="btn-settings" onclick="openSettings()">⚙ API Key</button>
+  </div>
+</nav>
+
+<main>
+  <!-- LEFT: story display -->
+  <div class="story-panel">
+    <div>
+      <div class="panel-title" data-en="Our story" data-zh="我们的故事">Our story</div>
+      <div class="panel-sub" data-en="amber is yours · violet is MOMO's" data-zh="驼色为你 · 紫色为 MOMO">amber is yours · violet is MOMO's</div>
+    </div>
+    <div class="orn">✦ ✦ ✦</div>
+    <div class="story-scroll" id="story-scroll"></div>
+    <div class="prompt-bar" id="prompt-bar"></div>
+    <div class="story-footer">
+      <button id="dl-btn" onclick="downloadStory()" style="display:none;font-size:11px" data-en="Download .txt" data-zh="下载故事">Download .txt</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: input -->
+  <div class="input-panel">
+    <div>
+      <div class="input-title" data-en="Your passage" data-zh="你的章节">Your passage</div>
+      <div class="input-sub" data-en="Write your part and MOMO will continue. Cmd+Enter to send." data-zh="写下你的段落，MOMO 将续写。按 Cmd+Enter 发送。">Write your part and MOMO will continue. Cmd+Enter to send.</div>
+    </div>
+
+    <div class="no-key-warning" id="no-key-warning">
+      ⚠️ No API key set yet. Click <strong>⚙ API Key</strong> in the top right corner to add your free Groq key — then you can start writing!
+    </div>
+
+    <!-- GENRE PICKER -->
+    <div class="genre-section">
+      <div class="genre-label" data-en="✦ Choose a style" data-zh="✦ 选择风格">✦ Choose a style</div>
+      <div class="genre-grid" id="genre-grid">
+        <div class="genre-card selected" onclick="selectGenre(this,'literary','Literary Fiction','literary fiction with lyrical prose and deep emotion','文学小说，充满诗意和情感深度')" data-en="Literary" data-zh="文学">
+          <div class="genre-icon">🖋</div>
+          <div class="genre-name">Literary</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'mystery','Mystery / Thriller','tense mystery or thriller with suspense and plot twists','悬疑惊悚，充满紧张感和意外转折')" data-en="Mystery" data-zh="悬疑">
+          <div class="genre-icon">🔍</div>
+          <div class="genre-name">Mystery</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'fantasy','Fantasy','imaginative fantasy with magic, wonder and world-building','奇幻，充满魔法与奇异的世界构建')" data-en="Fantasy" data-zh="奇幻">
+          <div class="genre-icon">🌙</div>
+          <div class="genre-name">Fantasy</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'romance','Romance','warm and emotional romance with heartfelt connections','温馨浪漫，充满心动与情感联结')" data-en="Romance" data-zh="爱情">
+          <div class="genre-icon">🌸</div>
+          <div class="genre-name">Romance</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'scifi','Sci-Fi','speculative science fiction with futuristic ideas and wonder','科幻，充满未来感与奇思妙想')" data-en="Sci-Fi" data-zh="科幻">
+          <div class="genre-icon">🚀</div>
+          <div class="genre-name">Sci-Fi</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'horror','Horror','atmospheric horror with dread, suspense and the uncanny','恐怖，充满不安氛围与诡异感')" data-en="Horror" data-zh="恐怖">
+          <div class="genre-icon">🕯</div>
+          <div class="genre-name">Horror</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'adventure','Adventure','fast-paced adventure with bold characters and exciting stakes','冒险，节奏紧凑，充满刺激挑战')" data-en="Adventure" data-zh="冒险">
+          <div class="genre-icon">🗺</div>
+          <div class="genre-name">Adventure</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'dreamy','Dream / Surreal','surreal dreamlike narrative with poetic and strange imagery','梦境超现实，诗意而奇异的叙事')" data-en="Dreamy" data-zh="梦幻">
+          <div class="genre-icon">☁️</div>
+          <div class="genre-name">Dreamy</div>
+        </div>
+        <div class="genre-card" onclick="selectGenre(this,'historical','Historical','richly detailed historical fiction with period atmosphere','历史小说，充满时代感与细节')" data-en="Historical" data-zh="历史">
+          <div class="genre-icon">📜</div>
+          <div class="genre-name">Historical</div>
+        </div>
+      </div>
+    </div>
+
+    <textarea id="story-input" placeholder="Begin your story here — a place, a face, or a first line…&#10;&#10;在这里开始你的故事 ——"></textarea>
+
+    <div class="btn-row">
+      <button class="btn-sage" id="submit-btn" onclick="handleSubmit()" data-en="Send my part + continue ↗" data-zh="提交并续写 ↗">Send my part + continue ↗</button>
+      <button class="btn-camel" id="save-btn" onclick="saveToHistory()" style="display:none" data-en="Save story" data-zh="保存故事">Save story</button>
+      <button id="illus-btn" onclick="openIllus()" style="display:none;color:var(--plum);border-color:var(--plum-light)" data-en="🎨 Illustration guide" data-zh="🎨 插画指南">🎨 Illustration guide</button>
+      <button id="reset-btn" onclick="resetStory()" style="display:none;color:var(--ink-muted)" data-en="Start over" data-zh="重新开始">Start over</button>
+    </div>
+
+    <div class="status-line" id="status-line"></div>
+
+    <!-- SAVED STORIES -->
+    <div id="saved-section" style="display:none;margin-top:0.5rem">
+      <div style="font-family:'Noto Serif SC',serif;font-size:13px;color:var(--sage);margin-bottom:8px;letter-spacing:0.03em" data-en="✦ Saved stories" data-zh="✦ 珍藏故事">✦ Saved stories</div>
+      <div id="saved-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ILLUSTRATION OVERLAY -->
+<div class="illus-overlay" id="illus-overlay">
+  <div class="illus-box">
+    <div class="illus-header">
+      <div>
+        <div class="illus-title" id="illus-title">✦ Illustration Guide</div>
+        <div class="illus-sub" id="illus-sub">Key scenes from your story, with directions for illustrators</div>
+      </div>
+      <button class="illus-close" onclick="closeIllus()">✕</button>
+    </div>
+    <div id="illus-content">
+      <div class="illus-loading" id="illus-loading">Reading your story and finding the best scenes to illustrate…</div>
+      <div class="illus-cards" id="illus-cards" style="display:none"></div>
+    </div>
+    <div class="illus-footer">
+      <button onclick="downloadIllus()" id="illus-dl-btn" style="display:none" data-en="Download guide .txt" data-zh="下载插画指南">Download guide .txt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function getSystem(){
+  const styleDesc = lang === 'zh' ? currentGenre.descZh : currentGenre.desc;
+  return `You are a creative co-author writing a ${currentGenre.label} story with a user. The user writes a segment, then you continue it.
+Style: ${styleDesc}
+Rules:
+- Write a compelling 2-4 paragraph continuation that fits the ${currentGenre.label} genre
+- End at a moment of tension, discovery, or decision that invites the reader to keep going
+- Match the tone and language the user sets (Chinese for Chinese, English for English)
+- Write ONLY the story continuation — no meta-commentary, no greetings, no explanations
+- Do not repeat what the user wrote
+- After your continuation, on a new line write exactly one line starting with "---" followed by a question or prompt inviting the reader to write the next part`;
+}
+
+let parts = [];
+let saved = JSON.parse(localStorage.getItem('momo_saved') || '[]');
+let lang = 'en';
+let currentGenre = { id:'literary', label:'Literary Fiction', desc:'literary fiction with lyrical prose and deep emotion', descZh:'文学小说，充满诗意和情感深度' };
+
+function selectGenre(el, id, label, desc, descZh){
+  const card = el.closest('.genre-card');
+  document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  currentGenre = { id, label, desc, descZh };
+}
+
+/* ── KEY MANAGEMENT ── */
+function getKey(){ return localStorage.getItem('momo_groq_key') || ''; }
+function openSettings(){
+  document.getElementById('key-input').value = getKey();
+  document.getElementById('key-status').className = 'key-status';
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
+function saveKey(){
+  const val = document.getElementById('key-input').value.trim();
+  if(!val){ showKeyStatus('Please enter a key.', false); return; }
+  if(!val.startsWith('gsk_')){ showKeyStatus('Groq keys start with gsk_ — please check yours.', false); return; }
+  localStorage.setItem('momo_groq_key', val);
+  showKeyStatus('✓ Key saved!', true);
+  document.getElementById('no-key-warning').classList.remove('visible');
+  setTimeout(closeSettings, 1000);
+}
+function showKeyStatus(msg, ok){
+  const el = document.getElementById('key-status');
+  el.textContent = msg;
+  el.className = 'key-status ' + (ok ? 'ok' : 'err');
+}
+
+/* ── LANGUAGE ── */
+function toggleLang(){
+  lang = lang === 'en' ? 'zh' : 'en';
+  document.getElementById('lang-btn').textContent = lang === 'en' ? '中文' : 'English';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    if(el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return;
+    if(el.classList.contains('genre-name')){
+      el.textContent = lang === 'en' ? el.dataset.en : (el.dataset.zh || el.dataset.en);
+      return;
+    }
+    el.textContent = lang === 'en' ? el.dataset.en : (el.dataset.zh || el.dataset.en);
+  });
+}
+
+/* ── RENDER ── */
+function render(){
+  const scroll = document.getElementById('story-scroll');
+  scroll.innerHTML = '';
+  if(!parts.length){
+    scroll.innerHTML = '<div class="empty">你的故事将在此处生长…<br/><span style="font-size:13px;opacity:0.7">Begin with any line that calls to you.</span></div>';
+    document.getElementById('dl-btn').style.display = 'none';
+    document.getElementById('save-btn').style.display = 'none';
+    document.getElementById('reset-btn').style.display = 'none';
+    return;
+  }
+  parts.forEach((p, idx) => {
+    const seg = document.createElement('div');
+    seg.className = 'seg ' + p.role;
+    const label = document.createElement('div');
+    label.className = 'seg-label';
+    label.textContent = p.role === 'you' ? (lang === 'zh' ? '你' : 'You') : 'MOMO';
+    const txt = document.createElement('div');
+    txt.className = 'seg-txt';
+    txt.textContent = p.text;
+    seg.appendChild(label);
+    seg.appendChild(txt);
+    // edit button only on MOMO's segments
+    if(p.role === 'ai'){
+      const actions = document.createElement('div');
+      actions.className = 'seg-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'seg-edit-btn';
+      editBtn.textContent = lang === 'zh' ? '✏ 编辑' : '✏ Edit';
+      editBtn.onclick = () => startEdit(seg, idx, txt);
+      actions.appendChild(editBtn);
+      seg.appendChild(actions);
+    }
+    scroll.appendChild(seg);
+  });
+  scroll.scrollTop = scroll.scrollHeight;
+  document.getElementById('dl-btn').style.display = 'inline-block';
+  document.getElementById('save-btn').style.display = 'inline-block';
+  document.getElementById('reset-btn').style.display = 'inline-block';
+  // show illustration button once there are at least 2 AI segments
+  const aiCount = parts.filter(p => p.role === 'ai').length;
+  document.getElementById('illus-btn').style.display = aiCount >= 2 ? 'inline-block' : 'none';
+}
+
+function startEdit(seg, idx, txtEl){
+  const current = parts[idx].text;
+  // hide text and actions, show textarea + save/cancel
+  txtEl.style.display = 'none';
+  seg.querySelector('.seg-actions').style.display = 'none';
+  const area = document.createElement('textarea');
+  area.className = 'seg-edit-area';
+  area.value = current;
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:5px;justify-content:flex-end;margin-top:6px';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'seg-cancel-btn';
+  cancelBtn.textContent = lang === 'zh' ? '取消' : 'Cancel';
+  cancelBtn.onclick = () => { area.remove(); btnRow.remove(); txtEl.style.display = ''; seg.querySelector('.seg-actions').style.display = ''; };
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'seg-save-btn';
+  saveBtn.textContent = lang === 'zh' ? '保存' : 'Save';
+  saveBtn.onclick = () => {
+    const newText = area.value.trim();
+    if(!newText) return;
+    parts[idx].text = newText;
+    area.remove(); btnRow.remove();
+    txtEl.textContent = newText;
+    txtEl.style.display = '';
+    seg.querySelector('.seg-actions').style.display = '';
+    setStatus(lang === 'zh' ? '✓ 已保存修改' : '✓ Edit saved');
+  };
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(saveBtn);
+  seg.appendChild(area);
+  seg.appendChild(btnRow);
+  area.focus();
+  area.setSelectionRange(area.value.length, area.value.length);
+}
+
+function setStatus(msg){ document.getElementById('status-line').textContent = msg; }
+
+function addLoadingBubble(){
+  const scroll = document.getElementById('story-scroll');
+  const seg = document.createElement('div');
+  seg.className = 'seg ai loading'; seg.id = 'loading-seg';
+  const label = document.createElement('div');
+  label.className = 'seg-label'; label.textContent = 'MOMO';
+  const txt = document.createElement('div');
+  txt.textContent = lang === 'zh' ? '续写中…' : 'Weaving…';
+  seg.appendChild(label); seg.appendChild(txt);
+  scroll.appendChild(seg);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+function removeLoadingBubble(){ const el = document.getElementById('loading-seg'); if(el) el.remove(); }
+
+function extractPrompt(text){
+  const lines = text.split('\n');
+  const pi = lines.findIndex(l => l.trim().startsWith('---'));
+  if(pi === -1) return { story: text.trim(), prompt: '' };
+  return {
+    story: lines.slice(0, pi).join('\n').trim(),
+    prompt: lines.slice(pi).join(' ').replace(/^---\s*/, '').trim()
+  };
+}
+
+/* ── API CALL ── */
+async function callGroq(messages){
+  const key = getKey();
+  if(!key) throw new Error('NO_KEY');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 1024,
+      messages: [{ role: 'system', content: getSystem() }, ...messages]
+    })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.choices[0].message.content;
+}
+
+/* ── SUBMIT ── */
+async function handleSubmit(){
+  if(!getKey()){
+    document.getElementById('no-key-warning').classList.add('visible');
+    openSettings(); return;
+  }
+  const input = document.getElementById('story-input');
+  const userText = input.value.trim();
+  if(!userText) return;
+  const btn = document.getElementById('submit-btn');
+  if(btn.disabled) return;
+
+  btn.disabled = true;
+  btn.textContent = lang === 'zh' ? 'MOMO 正在续写…' : 'MOMO is weaving…';
+  input.value = '';
+  setStatus('');
+  document.getElementById('prompt-bar').classList.remove('visible');
+
+  const prev = [...parts];
+  parts.push({ role: 'you', text: userText });
+  render(); addLoadingBubble();
+
+  try {
+    const messages = [...prev, { role: 'user', text: userText }].map(p => ({
+      role: p.role === 'you' ? 'user' : 'assistant',
+      content: p.text
+    }));
+    const reply = await callGroq(messages);
+    const { story, prompt } = extractPrompt(reply);
+    removeLoadingBubble();
+    parts.push({ role: 'ai', text: story });
+    render();
+    if(prompt){
+      const bar = document.getElementById('prompt-bar');
+      bar.textContent = prompt;
+      bar.classList.add('visible');
+    }
+  } catch(e) {
+    removeLoadingBubble();
+    parts.pop(); render();
+    if(e.message === 'NO_KEY'){
+      document.getElementById('no-key-warning').classList.add('visible');
+      openSettings();
+    } else {
+      setStatus(lang === 'zh' ? '出了点问题，请重试。' : 'Something went wrong. Please try again.');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = lang === 'zh' ? '提交并续写 ↗' : 'Send my part + continue ↗';
+  }
+}
+
+/* ── SAVE / DOWNLOAD ── */
+function saveToHistory(){
+  if(!parts.length) return;
+  const entry = { id: Date.now(), at: Date.now(), parts: JSON.parse(JSON.stringify(parts)) };
+  saved.unshift(entry);
+  localStorage.setItem('momo_saved', JSON.stringify(saved));
+  renderSaved();
+  setStatus(lang === 'zh' ? '✓ 故事已保存！' : '✓ Story saved!');
+}
+
+function getPreview(parts){
+  const first = parts.find(p => p.role === 'you');
+  if(!first) return 'Untitled';
+  return first.text.slice(0, 55) + (first.text.length > 55 ? '…' : '');
+}
+
+function formatDate(ts){
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderSaved(){
+  const list = document.getElementById('saved-list');
+  const section = document.getElementById('saved-section');
+  if(!saved.length){ section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = '';
+  saved.forEach(entry => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--camel-light);background:#fffdf8;font-size:12px';
+    item.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Noto Serif SC',serif;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)">${getPreview(entry.parts)}</div>
+        <div style="font-size:10.5px;color:var(--ink-muted);margin-top:1px">${entry.parts.length} parts · ${formatDate(entry.at)}</div>
+      </div>
+      <button onclick="loadStory(${entry.id})" style="font-size:10.5px;color:var(--sage);border-color:var(--sage-light)">Load</button>
+      <button onclick="deleteSaved(${entry.id})" style="font-size:10.5px;color:#8a3a2a;border-color:#d4a090">Delete</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function loadStory(id){
+  const entry = saved.find(s => s.id === id);
+  if(!entry) return;
+  if(parts.length && !confirm('Load this story? Your current story will be cleared.')) return;
+  parts = JSON.parse(JSON.stringify(entry.parts));
+  document.getElementById('prompt-bar').classList.remove('visible');
+  render();
+  setStatus(lang === 'zh' ? '✓ 故事已加载' : '✓ Story loaded');
+}
+
+function deleteSaved(id){
+  saved = saved.filter(s => s.id !== id);
+  localStorage.setItem('momo_saved', JSON.stringify(saved));
+  renderSaved();
+}
+
+function resetStory(){
+  if(!confirm(lang === 'zh' ? '重新开始？当前故事将被清除。' : 'Start over? Current story will be cleared.')) return;
+  parts = [];
+  document.getElementById('prompt-bar').classList.remove('visible');
+  setStatus('');
+  render();
+}
+
+function downloadStory(){
+  if(!parts.length) return;
+  const text = parts.map(p => `【${p.role === 'you' ? (lang === 'zh' ? '你' : 'You') : 'MOMO'}】\n${p.text}`).join('\n\n────\n\n');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'our-story.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── ILLUSTRATION ── */
+let illustrationData = [];
+
+function openIllus(){
+  document.getElementById('illus-overlay').classList.add('open');
+  document.getElementById('illus-loading').style.display = 'block';
+  document.getElementById('illus-cards').style.display = 'none';
+  document.getElementById('illus-dl-btn').style.display = 'none';
+  document.getElementById('illus-title').textContent = lang === 'zh' ? '✦ 插画指南' : '✦ Illustration Guide';
+  document.getElementById('illus-sub').textContent = lang === 'zh' ? '从你们的故事中找出最值得画的场景，为插画家提供灵感' : 'Key scenes from your story, with detailed directions for illustrators';
+  generateIllus();
+}
+
+function closeIllus(){
+  document.getElementById('illus-overlay').classList.remove('open');
+}
+
+async function generateIllus(){
+  const storyText = parts.map(p => (p.role === 'you' ? '[Reader]: ' : '[MOMO]: ') + p.text).join('
+
+');
+  const prompt = lang === 'zh'
+    ? `以下是一个合作创作的故事。请从中找出3-4个最适合被画成插画的场景，并为每个场景提供详细的插画指示。
+
+故事内容：
+${storyText}
+
+请严格按照以下JSON格式返回，不要有任何其他文字：
+{
+  "scenes": [
+    {
+      "title": "场景标题（简短）",
+      "quote": "故事中对应的原文片段（1-2句）",
+      "visual": "画面构图与视觉元素描述",
+      "lighting": "光线与色调建议",
+      "mood": "情绪与氛围",
+      "style": "推荐插画风格",
+      "tags": ["标签1", "标签2", "标签3"]
+    }
+  ]
+}`
+    : `The following is a collaboratively written story. Please identify 3-4 scenes that would make the most compelling illustrations, and provide detailed visual directions for each.
+
+Story:
+${storyText}
+
+Return ONLY valid JSON in this exact format, no other text:
+{
+  "scenes": [
+    {
+      "title": "Short scene title",
+      "quote": "The relevant excerpt from the story (1-2 sentences)",
+      "visual": "Description of composition and visual elements",
+      "lighting": "Lighting and color palette suggestions",
+      "mood": "Emotional atmosphere",
+      "style": "Recommended illustration style",
+      "tags": ["tag1", "tag2", "tag3"]
+    }
+  ]
+}`;
+
+  try {
+    const key = getKey();
+    if(!key) throw new Error('NO_KEY');
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 2048,
+        messages: [
+          { role: 'system', content: 'You are a creative director and art consultant. Return only valid JSON, no markdown, no explanation.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+    const data = await res.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+    illustrationData = parsed.scenes || [];
+    renderIllus();
+  } catch(e) {
+    document.getElementById('illus-loading').textContent = lang === 'zh' ? '出了点问题，请重试。' : 'Something went wrong. Please try again.';
+  }
+}
+
+function renderIllus(){
+  const loading = document.getElementById('illus-loading');
+  const cards = document.getElementById('illus-cards');
+  const dlBtn = document.getElementById('illus-dl-btn');
+  loading.style.display = 'none';
+  cards.style.display = 'flex';
+  cards.innerHTML = '';
+  illustrationData.forEach((scene, i) => {
+    const card = document.createElement('div');
+    card.className = 'illus-card';
+    card.innerHTML = `
+      <div class="illus-card-header">
+        <div class="illus-card-num">${i+1}</div>
+        <div class="illus-card-scene">${scene.title}</div>
+      </div>
+      <div class="illus-card-body">
+        <div>
+          <div class="illus-section-label">${lang==='zh'?'故事原文':'Story excerpt'}</div>
+          <div class="illus-quote">${scene.quote}</div>
+        </div>
+        <div class="illus-directions">
+          <div class="illus-section-label">${lang==='zh'?'插画方向':'Illustration directions'}</div>
+          <div class="illus-dir"><span class="illus-dir-icon">🖼</span><span><strong>${lang==='zh'?'构图':'Composition'}:</strong> ${scene.visual}</span></div>
+          <div class="illus-dir"><span class="illus-dir-icon">💡</span><span><strong>${lang==='zh'?'光线与色调':'Lighting & palette'}:</strong> ${scene.lighting}</span></div>
+          <div class="illus-dir"><span class="illus-dir-icon">🎭</span><span><strong>${lang==='zh'?'情绪氛围':'Mood'}:</strong> ${scene.mood}</span></div>
+          <div class="illus-dir"><span class="illus-dir-icon">🎨</span><span><strong>${lang==='zh'?'推荐风格':'Style'}:</strong> ${scene.style}</span></div>
+        </div>
+        <div>
+          <div class="illus-section-label">${lang==='zh'?'关键词':'Keywords'}</div>
+          <div class="illus-mood">${(scene.tags||[]).map(t=>`<span class="illus-tag">${t}</span>`).join('')}</div>
+        </div>
+      </div>`;
+    cards.appendChild(card);
+  });
+  dlBtn.style.display = 'inline-block';
+}
+
+function downloadIllus(){
+  if(!illustrationData.length) return;
+  const title = lang === 'zh' ? '插画指南' : 'Illustration Guide';
+  let text = title + '
+' + '='.repeat(40) + '
+
+';
+  illustrationData.forEach((scene, i) => {
+    text += `[${i+1}] ${scene.title}
+${'─'.repeat(30)}
+`;
+    text += `${lang==='zh'?'故事原文':'Excerpt'}:
+"${scene.quote}"
+
+`;
+    text += `${lang==='zh'?'构图':'Composition'}: ${scene.visual}
+`;
+    text += `${lang==='zh'?'光线与色调':'Lighting & palette'}: ${scene.lighting}
+`;
+    text += `${lang==='zh'?'情绪氛围':'Mood'}: ${scene.mood}
+`;
+    text += `${lang==='zh'?'推荐风格':'Style'}: ${scene.style}
+`;
+    text += `${lang==='zh'?'关键词':'Keywords'}: ${(scene.tags||[]).join(', ')}
+
+`;
+  });
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'illustration-guide.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── INIT ── */
+document.getElementById('story-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
+});
+if(!getKey()) document.getElementById('no-key-warning').classList.add('visible');
+render();
+renderSaved();
+</script>
+</body>
+</html>
